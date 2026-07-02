@@ -23,3 +23,5 @@ dist-ssr
 *.sln
 *.sw?
 .prettierrc
+  
+part2/part2-notes-frontend
