@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import personService from './services/persons'
+import Message from './components/Message'
 
 const Filter = (props) => {
   return (
@@ -49,6 +50,7 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+  const [message, setMessage] = useState(null)
 
   useEffect(() => {
     personService.getAll().then((initialPersons) => setPersons(initialPersons))
@@ -89,12 +91,21 @@ const App = () => {
               )
               setNewName('')
               setNewNumber('')
+              setMessage(`Updated the number of ${updatedContact.name}`)
+
+              setTimeout(() => {
+                setMessage(null)
+              }, 3000)
             })
             .catch((error) => {
-              alert(`'${contactToUpdate.name}' don't exist in database`)
               setPersons(persons.filter((p) => p.id !== contactToUpdate.id))
               setNewName('')
               setNewNumber('')
+              
+              setMessage([`Information of ${contactToUpdate.name} had already been removed from the server`, 1])
+              setTimeout(() => {
+                setMessage(null)
+              }, 3000);
             })
         }
       } else {
@@ -106,6 +117,11 @@ const App = () => {
           setPersons(persons.concat(returnPerson))
           setNewName('')
           setNewNumber('')
+          setMessage(`Added ${returnPerson.name}`)
+
+          setTimeout(() => {
+            setMessage(null)
+          }, 3000)
         })
       }
     }
@@ -143,6 +159,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+
+      <Message msg={message} />
 
       <Filter filter={filter} handleInputFilter={handleInputFilter} />
 

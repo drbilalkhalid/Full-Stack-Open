@@ -24,4 +24,5 @@ dist-ssr
 *.sw?
 .prettierrc
   
-part2/part2-notes-frontend
+part2/part2-notes-frontend 
+part2/exchangeRate

@@ -25,5 +25,6 @@
       "number": "23-37-4398345",
       "id": "iFnh-mRETFA"
     }
-  ]
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }
