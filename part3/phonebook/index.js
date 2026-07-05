@@ -1,0 +1,97 @@
+const express = require('express')
+const app = express()
+
+app.use(express.json())
+
+let persons = [
+  {
+    id: '1',
+    name: 'Arto Hellas',
+    number: '040-123456',
+  },
+  {
+    id: '2',
+    name: 'Ada Lovelace',
+    number: '39-44-5323523',
+  },
+  {
+    id: '3',
+    name: 'Dan Abramov',
+    number: '12-43-234345',
+  },
+  {
+    id: '4',
+    name: 'Mary Poppendieck',
+    number: '39-23-6423122',
+  },
+]
+
+const generateId = () => {
+  return String(Math.floor(Math.random() * 1000000))
+}
+
+// Get requests handling
+app.get('/api/persons', (request, response) => {
+  response.json(persons)
+})
+
+app.get('/api/persons/:id', (request, response) => {
+  const requestId = request.params.id
+
+  const person = persons.find((p) => p.id === requestId)
+  if (!person) {
+    return response.status(404).end()
+  }
+
+  response.json(person)
+})
+
+app.get('/info', (request, response) => {
+  const date = Date()
+  const noOfContacts = persons.length
+
+  response.send(
+    `<p>Phonebook has info for ${noOfContacts} people</p> <p>${date}</p>`,
+  )
+})
+
+//Delete requests
+app.delete('/api/persons/:id', (request, response) => {
+  const deleteRequestId = request.params.id
+
+  persons = persons.filter((p) => p.id !== deleteRequestId)
+
+  response.status(204).end()
+})
+
+//Post requests
+app.post('/api/persons', (request, response) => {
+  const body = request.body
+
+  if (!body.name && body.number) {
+    return response.status(400).end()
+  }
+
+  const exist = persons.find(
+    (p) => p.name.toLowerCase() === body.name.toLowerCase(),
+  )
+  if (exist) {
+    return response.status(409).json({
+      error: 'name must be unique',
+    })
+  }
+
+  const person = {
+    name: body.name,
+    number: body.number,
+    id: generateId(),
+  }
+  persons = persons.concat(person)
+
+  response.json(person)
+})
+
+const PORT = 3001
+app.listen(3001, () => {
+  console.log(`Server is running at port ${PORT}`)
+})
