@@ -1,7 +1,32 @@
 const express = require('express')
+const morgan = require('morgan')
+
 const app = express()
 
 app.use(express.json())
+
+// custom middleware
+app.use((request, response, next) => {
+  const originalSend = response.send
+  
+  response.send = function (body) {
+    response.locals.toResponseBody = body
+    return originalSend.call(this, body)
+  }
+  next()
+})
+
+morgan.token('response-body', (request, response) => {
+  const body = response.locals.toResponseBody
+
+  if (typeof body === 'object') {
+    return JSON.stringify(body)
+  }
+
+  return body
+})
+
+app.use(morgan(':method :url :status :response-time ms :response-body'))
 
 let persons = [
   {
@@ -68,8 +93,10 @@ app.delete('/api/persons/:id', (request, response) => {
 app.post('/api/persons', (request, response) => {
   const body = request.body
 
-  if (!body.name && body.number) {
-    return response.status(400).end()
+  if (!body.name || !body.number) {
+    return response.status(400).json({
+      error: 'name or number is missing',
+    })
   }
 
   const exist = persons.find(
