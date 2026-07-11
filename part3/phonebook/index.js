@@ -1,5 +1,6 @@
 const express = require('express')
 const morgan = require('morgan')
+const Person = require('./models/person')
 
 const app = express()
 
@@ -10,7 +11,7 @@ app.use(express.json())
 // custom middleware
 app.use((request, response, next) => {
   const originalSend = response.send
-  
+
   response.send = function (body) {
     response.locals.toResponseBody = body
     return originalSend.call(this, body)
@@ -30,94 +31,69 @@ morgan.token('response-body', (request, response) => {
 
 app.use(morgan(':method :url :status :response-time ms :response-body'))
 
-let persons = [
-  {
-    id: '1',
-    name: 'Arto Hellas',
-    number: '040-123456',
-  },
-  {
-    id: '2',
-    name: 'Ada Lovelace',
-    number: '39-44-5323523',
-  },
-  {
-    id: '3',
-    name: 'Dan Abramov',
-    number: '12-43-234345',
-  },
-  {
-    id: '4',
-    name: 'Mary Poppendieck',
-    number: '39-23-6423122',
-  },
-]
-
-const generateId = () => {
-  return String(Math.floor(Math.random() * 1000000))
-}
 
 // Get requests handling
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person.find({}).then((persons) => response.json(persons))
 })
 
-app.get('/api/persons/:id', (request, response) => {
-  const requestId = request.params.id
+//(this is using modern async approach instead of raw promises. Reason to use both appraoches is to see side by side comparasion later i will shift to modern appraoch completely)
+app.get('/api/persons/:id', async (request, response) => {
+  const requestedId = request.params.id
+  try {
+    const person = await Person.findById(requestedId)
 
-  const person = persons.find((p) => p.id === requestId)
-  if (!person) {
-    return response.status(404).end()
+    if (!person) {
+      return response.status(404).json({ error: 'Person Not Found' })
+    }
+    response.json(person)
+  } catch (error) {
+    console.log('error while featching person id:', error.message)
+    response.status(400).json({ error: 'likely invalid id' })
   }
-
-  response.json(person)
 })
 
 app.get('/info', (request, response) => {
   const date = Date()
-  const noOfContacts = persons.length
-
-  response.send(
-    `<p>Phonebook has info for ${noOfContacts} people</p> <p>${date}</p>`,
-  )
+  Person.countDocuments({}).then((noOfContacts) => {
+    response.send(
+      `<p>Phonebook has info for ${noOfContacts} people</p> <p>${date}</p>`,
+    )
+  })
 })
 
 //Delete requests
 app.delete('/api/persons/:id', (request, response) => {
   const deleteRequestId = request.params.id
 
-  persons = persons.filter((p) => p.id !== deleteRequestId)
-
-  response.status(204).end()
+  Person.findByIdAndDelete(deleteRequestId)
+    .then((deletedPerson) => response.status(204).end())
+    .catch((error) => response.status(400).json({ error: 'invalid id' }))
 })
 
-//Post requests
-app.post('/api/persons', (request, response) => {
+//Post requests (this is as well using modern approach for async tasks)
+app.post('/api/persons', async (request, response) => {
   const body = request.body
+  try {
+    if (!body.name || !body.number) {
+      return response.status(400).json({
+        error: 'name or number is missing',
+      })
+    }
 
-  if (!body.name || !body.number) {
-    return response.status(400).json({
-      error: 'name or number is missing',
+    const person = new Person({
+      name: body.name,
+      number: body.number,
     })
-  }
 
-  const exist = persons.find(
-    (p) => p.name.toLowerCase() === body.name.toLowerCase(),
-  )
-  if (exist) {
-    return response.status(409).json({
-      error: 'name must be unique',
-    })
-  }
+    const savedResponse = await person.save()
 
-  const person = {
-    name: body.name,
-    number: body.number,
-    id: generateId(),
-  }
-  persons = persons.concat(person)
+    response.json(savedResponse)
+  } catch (error) {
+    console.log('error while adding person:', error.message)
 
-  response.json(person)
+    response.status(500).json({ error: 'cannot save person' })
+  }
 })
 
 const PORT = process.env.PORT || 3001

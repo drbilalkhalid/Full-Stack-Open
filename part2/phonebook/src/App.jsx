@@ -91,7 +91,10 @@ const App = () => {
               )
               setNewName('')
               setNewNumber('')
-              setMessage(`Updated the number of ${updatedContact.name}`)
+              setMessage([
+                `Updated the number of ${updatedContact.name}`,
+                'success',
+              ])
 
               setTimeout(() => {
                 setMessage(null)
@@ -101,11 +104,14 @@ const App = () => {
               setPersons(persons.filter((p) => p.id !== contactToUpdate.id))
               setNewName('')
               setNewNumber('')
-              
-              setMessage([`Information of ${contactToUpdate.name} had already been removed from the server`, 1])
+
+              setMessage([
+                `Information of ${contactToUpdate.name} had already been removed from the server`,
+                'error',
+              ])
               setTimeout(() => {
                 setMessage(null)
-              }, 3000);
+              }, 3000)
             })
         }
       } else {
@@ -117,7 +123,7 @@ const App = () => {
           setPersons(persons.concat(returnPerson))
           setNewName('')
           setNewNumber('')
-          setMessage(`Added ${returnPerson.name}`)
+          setMessage([`Added ${returnPerson.name}`, 'success'])
 
           setTimeout(() => {
             setMessage(null)
@@ -137,6 +143,12 @@ const App = () => {
         .remove(id)
         .then((deletedContact) => {
           setPersons(persons.filter((p) => p.id !== id))
+          const deletePerson = persons.find(p => p.id === id)
+          setMessage([`${deletePerson.name} is deleted`, 'success'])
+          
+          setTimeout(() => {
+            setMessage(null)
+          }, 3000)
         })
         .catch((error) => {
           alert(`'${contactToDelete.name}' is already deleted`)

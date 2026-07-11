@@ -2,17 +2,19 @@ const Message = ({ msg }) => {
   if (!msg) {
     return null
   }
-  if (typeof msg !== 'string' || msg.length > 1 || msg[1] === 1) {
+  const [ message, code ] = msg
+
+  if (code === 'error') {
     return (
       <div className='errorMessage'>
-        <p>{msg[0]}</p>
+        <p>{message}</p>
       </div>
     )
   }
 
   return (
       <div className='message'>
-        <p>{msg}</p>
+        <p>{message}</p>
       </div>
     )
 
