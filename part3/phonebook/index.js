@@ -1,12 +1,12 @@
 const express = require('express')
 const morgan = require('morgan')
 const Person = require('./models/person')
+require('dotenv').config()
 
 const app = express()
 
-app.use(express.static('dist'))
-
 app.use(express.json())
+app.use(express.static('dist'))
 
 // custom middleware
 app.use((request, response, next) => {
@@ -18,7 +18,6 @@ app.use((request, response, next) => {
   }
   next()
 })
-
 morgan.token('response-body', (request, response) => {
   const body = response.locals.toResponseBody
 
@@ -28,73 +27,106 @@ morgan.token('response-body', (request, response) => {
 
   return body
 })
-
 app.use(morgan(':method :url :status :response-time ms :response-body'))
 
-
 // Get requests handling
-app.get('/api/persons', (request, response) => {
-  Person.find({}).then((persons) => response.json(persons))
+app.get('/api/persons', (request, response, next) => {
+  Person.find({})
+    .then((persons) => response.json(persons))
+    .catch((error) => next(error))
 })
 
-//(this is using modern async approach instead of raw promises. Reason to use both appraoches is to see side by side comparasion later i will shift to modern appraoch completely)
-app.get('/api/persons/:id', async (request, response) => {
-  const requestedId = request.params.id
-  try {
-    const person = await Person.findById(requestedId)
-
-    if (!person) {
-      return response.status(404).json({ error: 'Person Not Found' })
-    }
-    response.json(person)
-  } catch (error) {
-    console.log('error while featching person id:', error.message)
-    response.status(400).json({ error: 'likely invalid id' })
-  }
-})
-
-app.get('/info', (request, response) => {
-  const date = Date()
-  Person.countDocuments({}).then((noOfContacts) => {
-    response.send(
-      `<p>Phonebook has info for ${noOfContacts} people</p> <p>${date}</p>`,
-    )
-  })
-})
-
-//Delete requests
-app.delete('/api/persons/:id', (request, response) => {
-  const deleteRequestId = request.params.id
-
-  Person.findByIdAndDelete(deleteRequestId)
-    .then((deletedPerson) => response.status(204).end())
-    .catch((error) => response.status(400).json({ error: 'invalid id' }))
-})
-
-//Post requests (this is as well using modern approach for async tasks)
-app.post('/api/persons', async (request, response) => {
-  const body = request.body
-  try {
-    if (!body.name || !body.number) {
-      return response.status(400).json({
-        error: 'name or number is missing',
-      })
-    }
-
-    const person = new Person({
-      name: body.name,
-      number: body.number,
+//Get request for a specific person obj/document through id
+app.get('/api/persons/:id', (request, response, next) => {
+  Person.findById(request.params.id)
+    .then((person) => {
+      if (!person) {
+        return response.status(404).json({ error: 'Person Not Found' })
+      }
+      response.json(person)
     })
-
-    const savedResponse = await person.save()
-
-    response.json(savedResponse)
-  } catch (error) {
-    console.log('error while adding person:', error.message)
-
-    response.status(500).json({ error: 'cannot save person' })
-  }
+    .catch((error) => next(error))
 })
+
+//Get request on a info endpoint for a specific response
+app.get('/info', (request, response, next) => {
+  const date = Date()
+  Person.countDocuments({})
+    .then((noOfPersons) => {
+      response.send(
+        `<p>Phonebook has info for ${noOfPersons} people</p> <p>${date}</p>`,
+      )
+    })
+    .catch((error) => next(error))
+})
+
+//Delete request for deleting specific person document from db
+app.delete('/api/persons/:id', (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then((deletedPerson) => response.status(204).end())
+    .catch((error) => next(error))
+})
+
+//Post request to people/persons collections
+app.post('/api/persons', (request, response, next) => {
+  const body = request.body
+
+  if (!body.name || !body.number) {
+    return response.status(400).json({
+      error: 'name or number is missing',
+    })
+  }
+
+  const person = new Person({
+    name: body.name,
+    number: body.number,
+  })
+
+  person
+    .save()
+    .then((savedPerson) => {
+      response.json(savedPerson)
+    })
+    .catch((error) => next(error))
+})
+
+//Put request to update the name or number of already present name
+app.put('/api/persons/:id', (request, response, next) => {
+  const { name, number } = request.body
+
+  if (!name || !number) {
+    return response.status(400).json({ error: 'name or number is missing' })
+  }
+
+  Person.findById(request.params.id)
+    .then((person) => {
+      person.name = name
+      person.number = number
+
+      return person.save().then((updatedPerson) => {
+        response.json(updatedPerson)
+      })
+    })
+    .catch((error) => next(error))
+})
+
+//Unknown endpoint middleware defination
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'unknown endpoint' })
+}
+app.use(unknownEndpoint)
+
+//Error handler for all catches
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformated id' })
+  }
+
+  next(error)
+}
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
