@@ -63,7 +63,7 @@ app.get('/info', (request, response, next) => {
 //Delete request for deleting specific person document from db
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndDelete(request.params.id)
-    .then((deletedPerson) => response.status(204).end())
+    .then(() => response.status(204).end())
     .catch((error) => next(error))
 })
 
@@ -92,7 +92,7 @@ app.post('/api/persons', (request, response, next) => {
 
 //Put request to update the number of already present name
 app.put('/api/persons/:id', (request, response, next) => {
-  const { name, number } = request.body
+  const { number } = request.body
 
   Person.findByIdAndUpdate(
     request.params.id,

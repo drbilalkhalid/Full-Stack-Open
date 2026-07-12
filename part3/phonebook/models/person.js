@@ -7,7 +7,7 @@ mongoose.set('strictQuery', false)
 
 mongoose
   .connect(url, { family: 4 })
-  .then((result) => console.log('connected with MongoDB'))
+  .then(() => console.log('connected with MongoDB'))
   .catch((error) =>
     console.log('error while connecting with MongoDB:', error.message),
   )
@@ -23,7 +23,7 @@ const personSchema = new mongoose.Schema({
     minLength: 8,
     validate: {
       validator: (v) => /^\d{2,3}-\d{7,}$/.test(v),
-      message: "Invalid phone number format" 
+      message: 'Invalid phone number format'
     },
     required: true
   }
