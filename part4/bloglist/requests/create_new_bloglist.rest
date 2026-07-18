@@ -1,9 +1,10 @@
 POST http://localhost:3001/api/blogs
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Imdvb2NoZWFkZnMiLCJpZCI6IjZhNWJhZjU2Yjg5NzliMjg4MzZlNjFjZCIsImlhdCI6MTc4NDM5OTU3OCwiZXhwIjoxNzg0NDAzMTc4fQ.UQEDKBVJ9E9D-rehEKlV7SPkOOMte4uyc_lyvev_caI
 
 {
-  "title": "frantek",
-  "author": "lol",
-  "url": "www.google.com",
-  "likes": 1
+  "title": "express is great to learn about backend dev",
+  "author": "sui",
+  "url": "www.dev.com",
+  "likes": 214
 }

@@ -1,1 +1,7 @@
-DELETE http://localhost:3001/api/blogs/6a58a46674fa65845cbd9fd5
+DELETE http://localhost:3001/api/blogs/6a5bc6f69df4b3d722a684c9
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Imdvb2NoZWFkZnMiLCJpZCI6IjZhNWJhZjU2Yjg5NzliMjg4MzZlNjFjZCIsImlhdCI6MTc4NDM5OTU3OCwiZXhwIjoxNzg0NDAzMTc4fQ.UQEDKBVJ9E9D-rehEKlV7SPkOOMte4uyc_lyvev_caI
+
+
+#goocheadfs pass is subnum
+# bills56 token code and bills56 pass is bill
+# Authorization: Bearer 

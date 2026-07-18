@@ -5,13 +5,25 @@ const app = require('../app')
 const mongoose = require('mongoose')
 const helper = require('./helper_test')
 const Blog = require('../models/bloglist')
+const User = require('../models/user')
 
 const api = supertest(app)
 
 describe('when database have initial data (initialBlogs)', () => {
+  let token
+
   beforeEach(async () => {
     await Blog.deleteMany({})
-    await Blog.insertMany(helper.initialBlogs)
+    await User.deleteMany({})
+
+    const result = await helper.createUserAndGetToken()
+    token = result.token
+
+    const blogsWithUser = helper.initialBlogs.map(blog => ({
+      ...blog,
+      user: result.user._id,
+    }))
+    await Blog.insertMany(blogsWithUser)
   })
 
   describe('testing Get requests and the data coming from', () => {
@@ -60,7 +72,10 @@ describe('when database have initial data (initialBlogs)', () => {
         url: 'https://example.com/third-blog',
         likes: 3,
       }
-      await api.post('/api/blogs', newBlog).send(newBlog).expect(201)
+      await api
+        .post('/api/blogs')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newBlog).expect(201)
 
       const blogsAtEnd = await helper.allBlogsInDb()
       const newCreatedBlog = blogsAtEnd[blogsAtEnd.length - 1]
@@ -81,7 +96,8 @@ describe('when database have initial data (initialBlogs)', () => {
         url: 'https://example.com/third-blog',
       }
       const responseBlog = await api
-        .post('/api/blogs', newBlog)
+        .post('/api/blogs')
+        .set('Authorization', `Bearer ${token}`)
         .send(newBlog)
         .expect(201)
       assert.strictEqual(responseBlog.body.likes, 0)
@@ -93,7 +109,10 @@ describe('when database have initial data (initialBlogs)', () => {
         url: 'https://example.com/third-blog',
         likes: 43,
       }
-      await api.post('/api/blogs', newBlog).send(newBlog).expect(400)
+      await api
+        .post('/api/blogs')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newBlog).expect(400)
     })
     test('in case of missing url property it should return 400', async () => {
       const newBlog = {
@@ -101,7 +120,25 @@ describe('when database have initial data (initialBlogs)', () => {
         author: 'Alice Johnson',
         likes: 43,
       }
-      await api.post('/api/blogs', newBlog).send(newBlog).expect(400)
+      await api
+        .post('/api/blogs')
+        .set('Authorization', `Bearer ${token}`)
+        .send(newBlog).expect(400)
+    })
+  })
+
+  describe('testing authentication for blog creation', () => {
+    test('adding a blog fails with 401 Unauthorized if no token is provided', async () => {
+      const newBlog = {
+        title: 'Third blog',
+        author: 'Alice Johnson',
+        url: 'https://example.com/third-blog',
+        likes: 3,
+      }
+      await api
+        .post('/api/blogs')
+        .send(newBlog)
+        .expect(401)
     })
   })
 
@@ -109,7 +146,10 @@ describe('when database have initial data (initialBlogs)', () => {
     test('correctly delete the resource when given a right id', async () => {
       const blogsAtStart = await helper.allBlogsInDb()
       const blogToDelete = blogsAtStart[0]
-      await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204)
+      await api
+        .delete(`/api/blogs/${blogToDelete.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(204)
 
       const blogsAtEnd = await helper.allBlogsInDb()
       assert.strictEqual(blogsAtStart.length - 1, blogsAtEnd.length)
@@ -117,12 +157,18 @@ describe('when database have initial data (initialBlogs)', () => {
 
     test('when given a id of unavailable resource or already deleted expect 204', async () => {
       const unavailableBlogsId = '6a57be1a1d7bfc071a129b38'
-      await api.delete(`/api/blogs/${unavailableBlogsId}`).expect(204)
+      await api
+        .delete(`/api/blogs/${unavailableBlogsId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(204)
     })
 
     test('when given a invalid id expect 400', async () => {
       const inavlidBlogsId = '23dsaf'
-      await api.delete(`/api/blogs/${inavlidBlogsId}`).expect(400)
+      await api
+        .delete(`/api/blogs/${inavlidBlogsId}`)
+        .set('Authorization', `Bearer ${token}`)
+        .expect(400)
     })
   })
 
