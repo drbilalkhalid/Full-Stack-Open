@@ -17,7 +17,7 @@ loginRouter.post('/', async (request, response) => {
     return response.status(401).json({ error: 'username is not present' })
   }
 
-  const auth = bcrypt.compare(password, user.passwordHash)
+  const auth = await bcrypt.compare(password, user.passwordHash)
   if (!auth) {
     return response.status(401).json({ error: 'wrong password' })
   }
