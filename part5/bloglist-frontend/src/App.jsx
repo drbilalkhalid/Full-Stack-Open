@@ -1,18 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
 import blogService from './services/blogs'
 import LoginService from './services/login'
 import LoginForm from './components/LoginForm'
 import Notification from './components/Notification'
-import CreateNewBlog from './components/CreateNewBlog'
+import NewBlogForm from './components/NewBlogForm'
+import Toggleable from './components/Toggleable'
 
 const App = () => {
   const [blogs, setBlogs] = useState([])
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [title, setTitle] = useState('')
-  const [author, setAuthor] = useState('')
-  const [url, setUrl] = useState('')
   const [user, setUser] = useState(null)
   const [notification, SetNotification] = useState(null)
 
@@ -24,11 +20,14 @@ const App = () => {
     fetchBlogs()
   }, [])
 
+  const sortedBlogs = blogs.toSorted((a, b) => b.likes - a.likes)
+
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem('bloglistAppUser')
     if (loggedUserJSON) {
       const loggedUser = JSON.parse(loggedUserJSON)
       setUser(loggedUser)
+      blogService.setToken(loggedUser.token)
     }
   }, [])
 
@@ -39,14 +38,12 @@ const App = () => {
     }, 5000)
   }
 
-  const handleLoginForm = async (event) => {
-    event.preventDefault()
+  const login = async (loginObject) => {
     try {
-      const user = await LoginService.login(username, password)
+      const user = await LoginService.login(loginObject)
       window.localStorage.setItem('bloglistAppUser', JSON.stringify(user))
       setUser(user)
-      setUsername('')
-      setPassword('')
+      blogService.setToken(user.token)
     } catch (error) {
       if (error.response?.status === 401) {
         displayNotification('wrong username or password', true)
@@ -62,20 +59,15 @@ const App = () => {
     setUser(null)
   }
 
-  const handleCreateNewBlog = async (event) => {
-    event.preventDefault()
+  const createNewBlog = async (blogObject) => {
     try {
-      const newBlog = await blogService.create(
-        { title, author, url },
-        user.token,
-      )
+      const newBlog = await blogService.create(blogObject)
       setBlogs(blogs.concat(newBlog))
-      setTitle('')
-      setAuthor('')
-      setUrl('')
+      newBlogFormRef.current.toggleVisibility()
       displayNotification(
         `a new blog ${newBlog.title} by ${newBlog.author} added`,
       )
+      return true
     } catch (error) {
       if (error.response?.status === 401) {
         displayNotification(
@@ -85,22 +77,16 @@ const App = () => {
         window.localStorage.removeItem('bloglistAppUser')
         setUser(null)
       } else {
-        displayNotification(`Something went wrong, ${error.message}`, true)
+        const errorMessage = error.response?.data?.error
+        displayNotification(`failed, ${errorMessage === undefined ? 'something went wrong' : errorMessage}`, true)
       }
     }
   }
 
+  const newBlogFormRef = useRef()
+
   if (user === null) {
-    return (
-      <LoginForm
-        username={username}
-        password={password}
-        setUsername={setUsername}
-        setPassword={setPassword}
-        handleLoginForm={handleLoginForm}
-        notification={notification}
-      />
-    )
+    return <LoginForm login={login} notification={notification} />
   }
   return (
     <div>
@@ -115,18 +101,19 @@ const App = () => {
         </span>{' '}
       </p>
 
-      <CreateNewBlog
-        handleCreateNewBlog={handleCreateNewBlog}
-        title={title}
-        setTitle={setTitle}
-        author={author}
-        setAuthor={setAuthor}
-        url={url}
-        setUrl={setUrl}
-      />
+      <Toggleable buttonLabel='create new blog' ref={newBlogFormRef}>
+        <NewBlogForm createNewBlog={createNewBlog} />
+      </Toggleable>
 
-      {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} />
+      {sortedBlogs.map((blog) => (
+        <Blog
+          key={blog.id}
+          blog={blog}
+          blogs={blogs}
+          setBlogs={setBlogs}
+          currentUser={user}
+          displayNotification={displayNotification}
+        />
       ))}
     </div>
   )

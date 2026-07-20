@@ -40,7 +40,13 @@ blogRouter.post('/', userExtractor, async (request, response) => {
     { notes: updatedNotes },
     { validation: true },
   )
-  response.status(201).json(returnedBlog)
+
+  const populatedBlog = await returnedBlog.populate('user', {
+    username: 1,
+    name: 1,
+  })
+
+  response.status(201).json(populatedBlog)
 })
 
 blogRouter.delete('/:id', userExtractor, async (request, response) => {
@@ -52,7 +58,7 @@ blogRouter.delete('/:id', userExtractor, async (request, response) => {
   }
 
   if (blogToDelete.user.toString() !== verifiedUser.id) {
-    return response.status(401).json({
+    return response.status(403).json({
       error: 'not authorized to delete this blog because you didnt created it',
     })
   }
@@ -78,7 +84,12 @@ blogRouter.put('/:id', async (request, response) => {
     return response.status(404).end()
   }
 
-  response.json(updatedBlog)
+  const populatedUpdatedBlog = await updatedBlog.populate('user', {
+    username: 1,
+    name: 1,
+  })
+
+  response.json(populatedUpdatedBlog)
 })
 
 module.exports = blogRouter

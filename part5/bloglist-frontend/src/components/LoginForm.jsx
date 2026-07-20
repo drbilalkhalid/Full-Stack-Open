@@ -1,13 +1,15 @@
-import Notification from "./Notification"
+import { useState } from 'react'
+import Notification from './Notification'
 
-const LoginForm = ({
-  username,
-  password,
-  setUsername,
-  setPassword,
-  handleLoginForm,
-  notification
-}) => {
+const LoginForm = ({ login, notification }) => {
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+
+  const handleLoginForm = (event) => {
+    event.preventDefault()
+    login({ username, password })
+  }
+
   return (
     <div>
       <h2>Login in to application</h2>
@@ -27,7 +29,7 @@ const LoginForm = ({
           <label>
             password{' '}
             <input
-              type='text'
+              type='password'
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
