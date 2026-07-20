@@ -9,7 +9,7 @@ const NewBlogForm = ({ createNewBlog }) => {
     event.preventDefault()
     const success = await createNewBlog({
       title,
-      author,
+      author: author === '' ? 'unknown' : author,
       url,
     })
     if (success) {

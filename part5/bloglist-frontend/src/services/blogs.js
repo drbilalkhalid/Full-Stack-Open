@@ -16,7 +16,7 @@ const create = async (newObject) => {
   const response = await axios.post(
     baseUrl,
     newObject,
-    {headers: { Authorization: `Bearer ${token}` }},
+    { headers: { Authorization: `Bearer ${token}` } },
   )
   return response.data
 }
